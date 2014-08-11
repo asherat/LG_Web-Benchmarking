@@ -3,7 +3,8 @@
 MY_PATH="`dirname \"$0\"`"
 . $MY_PATH/Config/variables.conf
 
-$exeLGslaves "mkdir $configDir -p; scp lg1:$configDir/variables.conf $configDir; mkdir $benchmarkDir -p; scp -r lg1:$benchmarkDir/* $benchmarkDir && chmod +x $benchmarkDir/*.sh"
+$exeLGslaves "mkdir $configDir -p; scp lg1:$configDir/variables.conf $configDir; scp -r lg1:$benchmarkDir $mainDir && chmod +x $benchmarkDir/Monitor/*.sh && chmod +x $benchmarkDir/Parse/*.sh"
 
-chmod +x $benchmarkDir/*.sh
+chmod +x $benchmarkDir/Monitor/*.sh
+chmod +x $benchmarkDir/Parse/*.sh
 chmod +x $toolsDir/*.sh
