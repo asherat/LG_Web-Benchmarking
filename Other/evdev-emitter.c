@@ -17,6 +17,8 @@
 #define MC_LOOPBACK 1
 #define MC_TTL 1
 
+#define DEBUG
+int timeperjump=3;
 
 const char* RUN_BASE="/tmp/evdev-emitter/";
 
@@ -32,34 +34,23 @@ void main(int argc, char **argv) {
   char run_file[PATH_MAX];
   struct stat sb;
 
-  if (argc != 4) {
-    fprintf(stderr, "Usage: %s <event-device-file> <ip-addr> <ip-port>\n", basename(argv[0]));
+  if (argc != 3) {
+    fprintf(stderr, "Usage: %s <ip-addr> <ip-port>\n", basename(argv[0]));
     exit(EXIT_FAILURE);
   }
 
-  // did some joker open a file with a ' in the name?
-  if (strchr(argv[1], '\'') != NULL)
-    error("\' character not allowed in device filename");
-  // running over the buffer?
-  if (strlen(argv[1]) >= NAME_MAX)
-    error("device filename too long");
 
   memset(&sock_addr, 0, sizeof(sock_addr));
   sock_addr.sin_family = AF_INET;
 
-  if (inet_pton(AF_INET, argv[2], &sock_addr.sin_addr) <= 0)
+  if (inet_pton(AF_INET, argv[1], &sock_addr.sin_addr) <= 0)
     error("invalid address");
 
-  unsigned int sock_port = (unsigned int) strtoul(argv[3], NULL, 10);
+  unsigned int sock_port = (unsigned int) strtoul(argv[2], NULL, 10);
   if (sock_port < PORT_MIN || sock_port > PORT_MAX)
     error("invalid port");
 
   sock_addr.sin_port = htons(sock_port);
-
-  if ((device_fd = open(argv[1], O_RDONLY)) < 0) {
-    perror("opening the file you specified");
-    exit(EXIT_FAILURE);
-  }
 
   sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
   if (sock_fd < 0) {
@@ -72,33 +63,10 @@ void main(int argc, char **argv) {
   setsockopt(sock_fd, IPPROTO_IP, IP_MULTICAST_LOOP, &multicast_loop, sizeof(multicast_loop));
   setsockopt(sock_fd, IPPROTO_IP, IP_MULTICAST_TTL, &multicast_ttl, sizeof(multicast_ttl));
 
-  // check the run lock, lock if needed
-  char *device_name = basename(argv[1]);
-  strncpy(run_file, RUN_BASE, strlen(RUN_BASE));
-  strncat(run_file, device_name, strlen(device_name));
-  if (stat(run_file, &sb) >= 0)
-    error("device already running");
 
-  mkdir(RUN_BASE, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
-  run_fd = open(run_file, O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-  if (run_fd < 0)
-    error("couldn't create the run lock");
-  close(run_fd);
-
-  void cleanup() {
-    unlink(run_file);
-    exit(EXIT_FAILURE);
-  }
-
-  // clear the lock upon untimely death
-  signal(SIGINT, cleanup);
-  signal(SIGTERM, cleanup);
-  signal(SIGHUP, cleanup);
-  signal(SIGQUIT, cleanup);
-  signal(SIGSEGV, cleanup);
 
   #ifdef DEBUG
-    fprintf(stderr, "sending events from %s to %s:%u\n", device_name, argv[2], sock_port);
+    fprintf(stderr, "sending events from spaceNav to %s:%u\n", argv[1], sock_port);
   #endif
 
   /* initialize the input buffer */
@@ -109,7 +77,7 @@ void main(int argc, char **argv) {
   memset(event_data, 0, sizeof(ev));
 
   /* initialize the output buffer */
-
+  char *device_name = "spacenavigator";
   size_t sock_buffer_size = strlen(device_name) + sizeof(ev);
   char sock_buffer[sock_buffer_size];
 
@@ -122,20 +90,20 @@ void main(int argc, char **argv) {
   );
 
   /* begin relaying from the device to the socket */
+struct timeval tval;  // removed comma
+
+event_data->code=257;
 
   while(1) {
-    int num_read = read(device_fd, event_data, sizeof(ev));
 
-    if (sizeof(ev) != num_read) {
-      fputs("read failed\n", stderr);
-      cleanup();
-    }
+gettimeofday (&tval, NULL);
+event_data->time=tval;
+event_data->value=1;
 
-    if (event_data->type == EV_SYN || event_data->type == EV_MSC)
-      continue; // ignore EV_MSC and EV_SYN events
+
 
     memcpy(sock_buffer, event_data, sizeof(ev));
-
+    
     int num_sent = sendto(
       sock_fd,
       sock_buffer,
@@ -156,5 +124,35 @@ void main(int argc, char **argv) {
         num_sent, device_name, event_data->type, event_data->code, event_data->value
      );
     #endif
+
+
+gettimeofday (&tval, NULL);
+event_data->time=tval;
+event_data->value=0;
+
+    memcpy(sock_buffer, event_data, sizeof(ev));
+    
+    num_sent = sendto(
+      sock_fd,
+      sock_buffer,
+      sock_buffer_size,
+      0,
+      (struct sockaddr *) &sock_addr,
+      sizeof(sock_addr)
+    );
+
+    if (num_sent < 0) {
+      perror("sending to socket");
+    }
+
+    #ifdef DEBUG
+      fprintf(
+        stderr,
+        "sent %d bytes from %s. type: %d code: %d value: %d\n",
+        num_sent, device_name, event_data->type, event_data->code, event_data->value
+     );
+    #endif
+
+sleep(timeperjump);
   }
 }
