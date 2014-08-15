@@ -1,5 +1,5 @@
 #!/bin/bash
-
+#Monitorizes RAM for a given PID
 THIS_PATH="`dirname \"$0\"`"
 #. $THIS_PATH/../../Config/variables.conf
 cd $MY_PATH

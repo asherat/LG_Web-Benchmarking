@@ -19,6 +19,7 @@
 
 #define DEBUG
 int timeperjump=3;
+int jumps=3;
 
 const char* RUN_BASE="/tmp/evdev-emitter/";
 
@@ -91,16 +92,13 @@ void main(int argc, char **argv) {
 
   /* begin relaying from the device to the socket */
 struct timeval tval;  // removed comma
-
+event_data->type=1;
 event_data->code=257;
-
-  while(1) {
+  while(jumps>0) {
 
 gettimeofday (&tval, NULL);
 event_data->time=tval;
 event_data->value=1;
-
-
 
     memcpy(sock_buffer, event_data, sizeof(ev));
     
@@ -154,5 +152,6 @@ event_data->value=0;
     #endif
 
 sleep(timeperjump);
+jumps--;
   }
 }

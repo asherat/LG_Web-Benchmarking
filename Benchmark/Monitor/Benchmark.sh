@@ -5,27 +5,24 @@ cd $MY_PATH
 
 
 
-if [ $# -lt 1 ]  ; then
-	echo "USAGE:$0 [Tag]" # [time] [Additional Tag]"
+if [ $# -lt 4 ]  ; then
+	echo "USAGE:$0 [Tag] [Node.js IP] [Node.js Port] [Time]" # [time] [Additional Tag]"
 	exit 2
 fi
 
 tag=$1
-tourName='MiCasa'
+IP=$2
+PORT=$3
+myTime=$4
 
 TsharkOut=$rawDir/$tag.pcap
 TopOut=$rawDir/$tag.top
 MemOut=$rawDir/$tag.mem
-FPSOut=$rawDir/$tag.fps
 
 cmd_cpu='top -b -d 1 -p $(cat /tmp/Peruse.tmp) > '$TopOut' &'
 cmd_mem_tmp='cat /proc/$(cat /tmp/Peruse.tmp)/status | grep VmRSS'
 
 if [ -r $tourScript ] ; then
-	if [ -f ${XDG_CONFIG_HOME:-~/.config}/user-dirs.dirs ]; then
-		. ${XDG_CONFIG_HOME:-~/.config}/user-dirs.dirs
-		$exeLG "export XDG_DOWNLOAD_DIR && rm ${XDG_DOWNLOAD_DIR}/myApp_log*" 
-	fi
 	$exeLG "mkdir -p $rawDir"
 
 	#Get Google Earth PID
@@ -36,20 +33,18 @@ if [ -r $tourScript ] ; then
 	$exeLG "cat /dev/null > $TsharkOut"
 	$exeLG "cat /dev/null > $TopOut"
 	$exeLG "cat /dev/null > $MemOut"
-	$exeLG "cat /dev/null > $FPSOut"
+	#$exeLG "cat /dev/null > $FPSOut"
 	
-	echo "Start monitoring $tourName tour"
+	echo "Start monitoring $tag tour"
 	exec $exeLGbg tshark -i eth0 -q -w $TsharkOut &
 	exec $exeLGbg $cmd_cpu &
 	exec $exeLGbg $monitorDir/getRam.sh $MemOut &
 
-	echo "Starting $tourName tour"
-	$tourScript $tourName
+	echo "Starting $tag tour"
+	$tourScript $IP $PORT $myTime
 
-	echo "Done monitoring $tourName tour"
+	echo "Done monitoring $tag tour"
 	$exeLG $monitorDir/stopAll.sh
-
-	$exeLG mv ${XDG_DOWNLOAD_DIR}/myApp_log* $FPSOut 
 
 	$exeLG rm /tmp/Peruse.tmp
 else

@@ -4,12 +4,21 @@
 MY_PATH="`dirname \"$0\"`"
 cd $MY_PATH
 
-echo ----Starting tour $1----
+myIP=$1
+myPORT=$2
+myTime=$3
+
+echo ----Starting tour----
 #Gets a POI from the $1 tour each $2 seconds and puts it into /tmp/query.txt. This is the file which Google Earth is always reading and tells it to move to that position
-for i in {5..1}
-do
+
+#TODO:Doesn't work for 32bits
+#./evdev-emitter $1 $2
+
+#: <<'END'
+for (( i=$myTime; i>0; i-- ))do
 	echo "Point $i"
 	sleep 1
 done
+#END
 
 echo ----Tour finished----

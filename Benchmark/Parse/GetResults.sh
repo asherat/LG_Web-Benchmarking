@@ -15,10 +15,15 @@ outDir=$rawDir/"Result_$rawFile"
 
 echo "Getting CPU reports"
 echo echo 1 | awk '{print "\n;CPU;Memory\nTime;%CPU"}' > $outDir/1_top.csv
-cat $inFile.top | grep googleearth-bin | awk '{ print NR-1";"$9}' | tr -dc '[:digit:];,.\n' >> $outDir/1_top.csv
+cat $inFile.top | grep chrom | awk '{ print NR-1";"$9}' | tr -dc '[:digit:];,.\n' >> $outDir/1_top.csv
 
 echo "Getting RAM reports"
 echo echo 1 | awk '{print "\n\nRAM used"}' > $outDir/2_mem.csv
 awk '{print $2}' $inFile.mem >> $outDir/2_mem.csv
+
+echo "Getting FPS reports"
+echo echo 1 | awk '{print "\n\nFPS"}' > $outDir/3_fps.csv
+awk '{print $0}' $inFile.fps >> $outDir/3_fps.csv
+
 
 echo "$(hostname) |$rawFile|----END GetResults----"
