@@ -5,15 +5,16 @@ cd $MY_PATH
 
 
 
-if [ $# -lt 4 ]  ; then
-	echo "USAGE:$0 [Tag] [Node.js IP] [Node.js Port] [Time]" # [time] [Additional Tag]"
+if [ $# -lt 5 ]  ; then
+	echo "USAGE:$0 [Tag] [Node.js IP] [Node.js Port] [Jumps] [Timing]" # [time] [Additional Tag]"
 	exit 2
 fi
 
 tag=$1
 IP=$2
 PORT=$3
-myTime=$4
+myJumps=$4
+myTiming=$5
 
 TsharkOut=$rawDir/$tag.pcap
 TopOut=$rawDir/$tag.top
@@ -41,7 +42,7 @@ if [ -r $tourScript ] ; then
 	exec $exeLGbg $monitorDir/getRam.sh $MemOut &
 
 	echo "Starting $tag tour"
-	$tourScript $IP $PORT $myTime
+	$tourScript $IP $PORT $myJumps $myTiming
 
 	echo "Done monitoring $tag tour"
 	$exeLG $monitorDir/stopAll.sh

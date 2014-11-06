@@ -6,10 +6,7 @@ cd $MY_PATH
 
 usage="USAGE:$0 [IP] [Port] [Jumps] [Timing]"
 
-if [ $# -lt 4 ]  ; then
-	echo $usage
-	exit 2
-fi
+
 
 myIP=$1
 myPORT=$2
@@ -20,12 +17,12 @@ echo ----Starting tour----
 #Gets a POI from the $1 tour each $2 seconds and puts it into /tmp/query.txt. This is the file which Google Earth is always reading and tells it to move to that position
 
 #TODO:Doesn't work for 32bits
+./evdev-emitter $1 $2
 
 #: <<'END'
-for (( i=1; i<=$myJumps; i++ ))do
-	./evdev-emitter $1 $2
+for (( i=$myTime; i>0; i-- ))do
 	echo "Point $i"
-	sleep $myTiming
+	sleep 1
 done
 #END
 
